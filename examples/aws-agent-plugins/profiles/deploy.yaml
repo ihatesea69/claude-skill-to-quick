@@ -1,0 +1,22 @@
+# Quick frontmatter profile for deploy (awslabs/agent-plugins, deploy-on-aws).
+# Tool names are the ones the AWS Knowledge MCP Server returns from tools/list.
+inputs:
+  - name: application
+    required: true
+    description: What the application is, written in the chat (framework, database, traffic, static or dynamic). Quick cannot scan a codebase.
+  - name: production_ready
+    required: false
+    description: Say "production-ready" to leave the dev-sized defaults.
+  - name: region
+    required: false
+    description: Target AWS Region. The bundled price figures are approximate us-east-1.
+tools:
+  - aws___search_documentation
+  - aws___read_documentation
+  - aws___get_regional_availability
+integration:
+  connector: AWS Knowledge
+  type: mcp
+  url: https://knowledge-mcp.global.api.aws
+  auth: none
+  requires: Nothing. Public server, rate limited. The awspricing and awsiac servers of the Claude plugin run locally (uvx) and are not available in Quick.

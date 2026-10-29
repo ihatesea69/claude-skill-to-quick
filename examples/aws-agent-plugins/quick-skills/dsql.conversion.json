@@ -1,0 +1,36 @@
+{
+  "name": "dsql",
+  "source": "dsql",
+  "frontmatter_keys": [
+    "name",
+    "description",
+    "license",
+    "metadata",
+    "inputs",
+    "tools",
+    "integration"
+  ],
+  "dropped_frontmatter_keys": [],
+  "host_binding_inserted": true,
+  "newline": "LF",
+  "source_skill_md_sha256": "7a53b87c24452fec3d818e64737cadab6f65799f3bb89ff5bb31975a05979b7a",
+  "source_body_sha256": "69bdf8703f984f04ba87e1d0e8e9221db03f5816f5d5e5864a5b687a5ec428d3",
+  "body_unchanged": true,
+  "leading_blank_lines_dropped": 1,
+  "file_count": 72,
+  "zip": "dsql.zip",
+  "zip_bytes": 167903,
+  "accepted_missing_references": [
+    "SKILL.md: ../../scripts/",
+    "SKILL.md: ../../scripts/README.md",
+    "SKILL.md: ../../scripts/psql-connect.sh",
+    "SKILL.md: scripts/README.md",
+    "SKILL.md: scripts/psql-connect.sh",
+    "mcp/platforms/claude-code.md: ../../../../.mcp.json",
+    "references/auth/connectivity-tools.md: ../../../../scripts/README.md",
+    "references/auth/connectivity-tools.md: ../../../../scripts/loader.sh",
+    "references/auth/connectivity-tools.md: ../../../../scripts/psql-connect.sh"
+  ],
+  "problems": [],
+  "ok": true
+}

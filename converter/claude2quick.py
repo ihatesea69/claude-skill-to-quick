@@ -37,8 +37,15 @@ BLOCK_START = "<!-- quick-host-binding:start -->"
 BLOCK_END = "<!-- quick-host-binding:end -->"
 NAME_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
 DESCRIPTION_MAX = 1024
+# Open Agent Skills frontmatter keys that are copied through when the source has them.
+KEEP_KEYS = ("license", "compatibility", "metadata")
 # Relative paths a SKILL.md points at, in backticks, brackets or parentheses.
 REF_RE = re.compile(r"[`(\[]((?:_vendored|_parallax|references|scripts|assets)/[^`)\]\s#]+)")
+# Markdown link targets: [text](target). Resolved relative to the file that holds them.
+LINK_RE = re.compile(r"\]\(\s*<?([^)\s>#]+)")
+# Code is example text, not a link: drop fenced blocks and inline spans before scanning.
+CODE_RE = re.compile(r"```.*?```|~~~.*?~~~|`[^`\n]*`", re.S)
+EXTERNAL_RE = re.compile(r"^(?:[a-z][a-z0-9+.-]*:|//|\$\{|\{\{)", re.I)
 SKIP_PARTS = {"__pycache__", ".git", ".pytest_cache", ".DS_Store"}
 
 
@@ -81,20 +88,51 @@ def stage_source(src: Path, tmp: Path) -> Path:
     raise ConversionError(f"unsupported source: {src}")
 
 
-def build_frontmatter(src_fm: dict, profile: dict, minimal: bool) -> dict:
+def build_frontmatter(src_fm: dict, profile: dict, minimal: bool) -> tuple[dict, list[str]]:
+    """Return (frontmatter, dropped_keys).
+
+    Kept: name, description, and the other open Agent Skills keys (license,
+    compatibility, metadata). Dropped and reported: Claude-only keys such as
+    allowed-tools, argument-hint, user-invocable, which Quick has no use for.
+    """
     name = src_fm.get("name")
     desc = src_fm.get("description")
     if not name or not desc:
         raise ConversionError("source frontmatter needs both name and description")
     out = {"name": name, "description": desc}
     if not minimal:
+        for key in KEEP_KEYS:
+            if key in src_fm:
+                out[key] = src_fm[key]
         for key in ("inputs", "tools", "integration"):
             if profile.get(key):
                 out[key] = profile[key]
+    dropped = [k for k in src_fm if k not in out]
+    return out, dropped
+
+
+def broken_links(root: Path) -> list[str]:
+    """Relative markdown links, in every .md file, that leave the package or point nowhere.
+
+    Returned as '<file>: <target as written>'. A link that climbs out of the skill
+    folder (../../scripts/x.sh) works in the Claude plugin tree but not in Quick,
+    which only receives this folder.
+    """
+    root_abs = root.resolve()
+    out = []
+    for md in sorted(root.rglob("*.md")):
+        text = CODE_RE.sub("", md.read_text(encoding="utf-8", errors="replace"))
+        for target in sorted(set(LINK_RE.findall(text))):
+            if EXTERNAL_RE.match(target):
+                continue
+            dest = (md.parent / target).resolve()
+            inside = dest == root_abs or root_abs in dest.parents
+            if not inside or not dest.exists():
+                out.append(f"{md.relative_to(root).as_posix()}: {target}")
     return out
 
 
-def check_package(root: Path, fm: dict, body: str) -> dict:
+def check_package(root: Path, fm: dict, body: str, allow_missing=()) -> dict:
     """Checks that decide whether the package is safe to upload."""
     problems = []
     if not NAME_RE.match(fm["name"]):
@@ -109,7 +147,13 @@ def check_package(root: Path, fm: dict, body: str) -> dict:
         if clean.endswith("...") or clean.endswith("/"):
             continue  # prose placeholder such as `_parallax/...`
         if not (root / clean).exists():
-            missing.append(clean)
+            missing.append(f"SKILL.md: {clean}")
+    missing = sorted(set(missing) | set(broken_links(root)))
+    # A ref is accepted when its target, as written, is listed with --allow-missing:
+    # the host-binding block must then tell the model that file is absent in Quick.
+    allowed = {a.strip() for a in allow_missing}
+    accepted = [m for m in missing if m.split(": ", 1)[1] in allowed]
+    missing = [m for m in missing if m not in accepted]
     if missing:
         problems.append("referenced files missing from the package: " + ", ".join(missing))
     links, non_utf8 = [], []
@@ -125,11 +169,12 @@ def check_package(root: Path, fm: dict, body: str) -> dict:
         problems.append("symlinks are not portable: " + ", ".join(links))
     if non_utf8:
         problems.append("text files that are not UTF-8: " + ", ".join(non_utf8))
-    return {"problems": problems, "missing_references": missing}
+    return {"problems": problems, "missing_references": missing,
+            "accepted_missing_references": accepted}
 
 
 def convert(src: Path, out: Path, profile_path: Path | None, binding_path: Path | None,
-            minimal: bool = False) -> dict:
+            minimal: bool = False, allow_missing=()) -> dict:
     profile = yaml.safe_load(profile_path.read_text(encoding="utf-8")) if profile_path else {}
     binding = binding_path.read_text(encoding="utf-8") if binding_path else ""
     with tempfile.TemporaryDirectory() as td:
@@ -138,7 +183,7 @@ def convert(src: Path, out: Path, profile_path: Path | None, binding_path: Path 
         text = raw.decode("utf-8")
         nl, fm_text, body = split_frontmatter(text)
         src_fm = yaml.safe_load(fm_text) or {}
-        fm = build_frontmatter(src_fm, profile, minimal)
+        fm, dropped_keys = build_frontmatter(src_fm, profile, minimal)
 
         fm_yaml = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True, width=10_000).rstrip("\n")
         block = ""
@@ -166,7 +211,7 @@ def convert(src: Path, out: Path, profile_path: Path | None, binding_path: Path 
     lone_lf = new_text.count("\n") - crlf
     line_ending_ok = (lone_lf == 0) if nl == "\r\n" else (crlf == 0)
 
-    checks = check_package(dest, fm, new_text)
+    checks = check_package(dest, fm, new_text, allow_missing)
     if not body_ok:
         checks["problems"].append("workflow body changed during conversion")
     if not line_ending_ok:
@@ -182,6 +227,7 @@ def convert(src: Path, out: Path, profile_path: Path | None, binding_path: Path 
         "name": fm["name"],
         "source": src.name,  # file name only: reports get committed, local paths must not
         "frontmatter_keys": list(fm),
+        "dropped_frontmatter_keys": dropped_keys,
         "host_binding_inserted": bool(block),
         "newline": "CRLF" if nl == "\r\n" else "LF",
         "source_skill_md_sha256": sha256(raw),
@@ -191,6 +237,7 @@ def convert(src: Path, out: Path, profile_path: Path | None, binding_path: Path 
         "file_count": len(files),
         "zip": zip_path.name,
         "zip_bytes": zip_path.stat().st_size,
+        "accepted_missing_references": checks["accepted_missing_references"],
         "problems": checks["problems"],
         "ok": not checks["problems"],
     }
@@ -206,10 +253,14 @@ def main(argv=None) -> int:
     ap.add_argument("--binding", type=Path, help="Markdown host-binding block to insert")
     ap.add_argument("--minimal-frontmatter", action="store_true",
                     help="write only name + description (fallback if Quick rejects extra keys)")
+    ap.add_argument("--allow-missing", action="append", default=[], metavar="TARGET",
+                    help="link target (as written) that is known to be absent in Quick; "
+                         "the binding block must say so. Repeatable.")
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
     try:
-        r = convert(a.source, a.out, a.profile, a.binding, a.minimal_frontmatter)
+        r = convert(a.source, a.out, a.profile, a.binding, a.minimal_frontmatter,
+                    a.allow_missing)
     except ConversionError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 2
@@ -218,6 +269,10 @@ def main(argv=None) -> int:
           f"body_unchanged={r['body_unchanged']}")
     for p in r["problems"]:
         print(f"  - {p}")
+    for p in r["accepted_missing_references"]:
+        print(f"  ~ accepted absent in Quick: {p}")
+    if r["dropped_frontmatter_keys"]:
+        print("  ~ dropped frontmatter keys: " + ", ".join(r["dropped_frontmatter_keys"]))
     return 0 if r["ok"] else 1
 
 

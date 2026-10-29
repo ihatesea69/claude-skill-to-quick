@@ -4,3 +4,4 @@
 *.zip binary
 # Packaged skills are compared byte-for-byte with upstream: never touch their line endings.
 examples/parallax/quick-skills/** -text
+examples/aws-agent-plugins/quick-skills/** -text

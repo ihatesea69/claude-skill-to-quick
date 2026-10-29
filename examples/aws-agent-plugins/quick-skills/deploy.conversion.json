@@ -1,0 +1,26 @@
+{
+  "name": "deploy",
+  "source": "deploy",
+  "frontmatter_keys": [
+    "name",
+    "description",
+    "inputs",
+    "tools",
+    "integration"
+  ],
+  "dropped_frontmatter_keys": [],
+  "host_binding_inserted": true,
+  "newline": "LF",
+  "source_skill_md_sha256": "7fec2fa8cd5e4a82fb68cf9951a436dd04049feb4550ab784d8c566894212e5c",
+  "source_body_sha256": "5bafe08c4f08ae60d2dc23b4ee1709db3f768eb468bb2e1904d01bc475dfeb11",
+  "body_unchanged": true,
+  "leading_blank_lines_dropped": 1,
+  "file_count": 4,
+  "zip": "deploy.zip",
+  "zip_bytes": 10699,
+  "accepted_missing_references": [
+    "SKILL.md: ../elastic-beanstalk/SKILL.md"
+  ],
+  "problems": [],
+  "ok": true
+}

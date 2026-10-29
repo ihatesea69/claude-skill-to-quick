@@ -82,6 +82,33 @@ class ConvertTests(unittest.TestCase):
         with self.assertRaises(c.ConversionError):
             self.run_convert(bad)
 
+    def test_link_leaving_package_fails_unless_allowed(self):
+        body = BODY + "Run [it](../../scripts/run.sh). Docs: [d](https://example.com/x).\n"
+        src = make_skill(self.tmp, body=body)
+        (src / "references" / "a.md").write_text("see [b](b.md)\n", encoding="utf-8")
+        r = self.run_convert(src)
+        self.assertFalse(r["ok"])
+        joined = " ".join(r["problems"])
+        self.assertIn("SKILL.md: ../../scripts/run.sh", joined)
+        self.assertIn("references/a.md: b.md", joined)       # nested file, broken target
+        self.assertNotIn("example.com", joined)               # external URL ignored
+        (src / "references" / "c.md").write_text(
+            "Template: `![<name>](<url>)`\n\n```\n[x](missing.md)\n```\n", encoding="utf-8")
+        r2 = self.run_convert(src, allow_missing=["../../scripts/run.sh", "b.md"])
+        self.assertTrue(r2["ok"], r2["problems"])
+        self.assertEqual(len(r2["accepted_missing_references"]), 2)
+
+    def test_open_keys_kept_claude_keys_dropped(self):
+        src = make_skill(self.tmp)
+        p = src / "SKILL.md"
+        p.write_text(p.read_text(encoding="utf-8").replace(
+            "---\n\n", "license: Apache-2.0\nallowed-tools: Bash, Read\n---\n\n", 1), encoding="utf-8")
+        r = self.run_convert(src)
+        self.assertTrue(r["ok"], r["problems"])
+        self.assertIn("license", r["frontmatter_keys"])
+        self.assertEqual(r["dropped_frontmatter_keys"], ["allowed-tools"])
+        self.assertTrue(r["body_unchanged"])
+
 
 if __name__ == "__main__":
     unittest.main()

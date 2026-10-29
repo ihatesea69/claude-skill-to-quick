@@ -1,0 +1,18 @@
+# Quick frontmatter profile for dsql (awslabs/agent-plugins, databases-on-aws).
+# Tool names are the ones the AWS Knowledge MCP Server returns from tools/list.
+inputs:
+  - name: request
+    required: true
+    description: The DSQL question or task in plain words, for example a limit, an error code, or a MySQL/PostgreSQL schema to convert.
+  - name: schema_or_sql
+    required: false
+    description: SQL text pasted in the chat (CREATE TABLE, query, migration) when the task is about specific SQL.
+tools:
+  - aws___search_documentation
+  - aws___read_documentation
+integration:
+  connector: AWS Knowledge
+  type: mcp
+  url: https://knowledge-mcp.global.api.aws
+  auth: none
+  requires: Nothing. Public server, rate limited. No AWS account and no DSQL cluster are needed for the documentation, limit and schema-conversion parts of the skill.
