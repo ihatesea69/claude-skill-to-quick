@@ -1,0 +1,32 @@
+# Quick frontmatter profile for parallax-should-i-buy.
+# Values are taken from the source SKILL.md ("Usage" and "Step 0") - nothing invented.
+inputs:
+  - name: symbol
+    required: true
+    description: Plain ticker (AAPL) or RIC (AAPL.O, 005930.KS).
+  - name: language
+    required: false
+    description: "Output language: en (default), zh-CN, zh-TW, zh-HK, th, vi-VN, ar-SA."
+  - name: register
+    required: false
+    description: "register=retail passes the retail register to the translator; absent means institutional."
+  - name: audience
+    required: false
+    description: "audience=client_safe or audience=internal_analyst."
+tools:
+  - get_company_info
+  - get_score_analysis
+  - get_financials
+  - get_peer_snapshot
+  - get_stock_outlook
+  - get_technical_analysis
+  - get_news_synthesis
+  - macro_analyst
+  - list_macro_countries
+  - explain_methodology
+integration:
+  connector: Parallax
+  type: mcp
+  url: https://mcp.chicago.global/api/mcp
+  auth: oauth-user
+  requires: Active Parallax subscription (Chicago Global). Without it the skill runs its pre-flight and reports the connector as unavailable; it returns no data.

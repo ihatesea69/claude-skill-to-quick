@@ -1,0 +1,6 @@
+# Later lines override earlier ones: keep the catch-all first.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.zip binary
+# Packaged skills are compared byte-for-byte with upstream: never touch their line endings.
+examples/parallax/quick-skills/** -text

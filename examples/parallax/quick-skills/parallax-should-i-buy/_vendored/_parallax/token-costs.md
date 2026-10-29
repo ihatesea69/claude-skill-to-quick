@@ -1,0 +1,121 @@
+# Parallax Credit Cost Reference
+
+<!-- authority: observation -->
+<!-- verified: 2026-10-19 -->
+<!-- overrides: live schema and live responses win -->
+
+Parallax bills **credits**. These are separate from the model's input/output tokens.
+The filename remains `token-costs.md` for existing references.
+
+Prices below match the direct MCP tool descriptions discovered on 2026-10-19
+and the published tool credit contract. These are advertised prices, not measured
+account deductions. Another connector can expose an older contract: read its full
+`Cost:` clause before spending and preserve the operator's chosen account.
+Never infer account identity or billing correctness from a health response.
+
+## Tool credit costs
+
+All 36 tools are priced. Each row states its billing unit; batching symbols
+reduces request overhead, not the number of billable symbols.
+
+| Tool | Credits | Basis |
+|---|---|---|
+| `check_api_health` | 0 | Service liveness only |
+| `check_job_status` | 0 | Poll an existing job; preserve its identifier |
+| `check_macro_health` | 0 | Deprecated; use health for liveness or countries for coverage |
+| `explain_methodology` | 0 | Methodology lookup |
+| `get_docs` | 0 | Documentation lookup |
+| `list_docs` | 0 | Documentation index |
+| `search_stocks` | 0 | Stock resolution |
+| `search_etfs` | 0 | ETF resolution |
+| `etf_search` | 0 | Deprecated ETF search alias |
+| `list_macro_countries` | 0 | Covered macro markets |
+| `submit_feedback` | 0 | Submission; still requires authorization to send |
+| `get_company_info` | 0.05 per symbol | Every requested symbol in a successful batch |
+| `export_price_series` | 0.05 per symbol | Equity prices; adjustment basis must be verified separately |
+| `etf_daily_price` | 0.05 per symbol | ETF price history |
+| `get_telemetry` | 0.05 | One global request, never one per market |
+| `explore_telemetry` | 0.05–0.2 | 0.05 per call; 0.1 for a stock lookup; a basket lookup adds 0.05 per basket opened; at most 0.2 |
+| `get_financials` | 0.05–0.1 per symbol | Per statement; `latest=true` doubles income, balance_sheet and cash_flow only |
+| `get_stock_outlook` | 0.05–0.1 | Targets/recommendations 0.05 per call; risk_return 0.1 per call; dividends 0.05 per symbol |
+| `get_peer_snapshot` | 0.1 | Per call |
+| `export_peer_comparison` | 0.1 | Per call |
+| `get_score_analysis` | 0.1 | Per call |
+| `get_score_summary` | 0.1 | Per call |
+| `etf_profile` | 0.1 | Per successful profile call |
+| `etf_holdings` | 0.1 | Per call |
+| `quick_portfolio_scores` | 0.1 per holding | Selected holdings, default 50, maximum 100 |
+| `check_portfolio_redundancy` | 0.1 per holding | Selected holdings, maximum 100 |
+| `get_performance_history` | up to 0.2 | Always attempts calendar and risk/return reads at 0.1 each; all-success total 0.2 |
+| `build_stock_universe` | 5 | Per successful universe job |
+| `analyze_portfolio` | 5 | Per successful analysis job |
+| `get_news_synthesis` | 5 | Per successful news job |
+| `get_technical_analysis` | 5 | Per successful technical job |
+| `get_financial_analysis` | 5 | Per successful Palepu job |
+| `macro_analyst` | 5–50 | Explicit component 5; omitted-component overview normally 5, up to 50 on reassembly |
+| `get_stock_report` | 10 | Per successful report job |
+| `get_etf_report` | 10 | Symbol resolution is free |
+| `get_assessment` | 10 | Deep research tier |
+
+### Billing and estimate rules
+
+- Three symbols at 0.05 each cost 0.15, even in one request. Count symbols, not batches.
+- Financial comparisons issue two reads only for `latest=true` income, balance_sheet or cash_flow. Ratios and summary remain 0.05 per symbol.
+- Per-holding tools bill selected successful lookups, including zero-weight holdings. Trimmed holdings cause no lookup. An all-zero book fails validation before lookups; selected zero-weight rows in a valid positive-weight book still bill. A quick score at 50 holdings costs 5, equal to portfolio analysis; the outputs have different purposes and are not interchangeable.
+- A macro overview can make its initial request plus nine component requests. Its maximum is 50 when all ten return HTTP 2xx. Explicit components never fan out. Do not replace an overview with a component unless that component answers the workflow's question.
+- HTTP 4xx/5xx reads and failed async jobs do not bill. A successful empty response can bill. An unsupported ETF probe returning HTTP 4xx costs zero; reserve 0.1 per probe when planning without response evidence.
+- Polling a pending job costs zero. Repeating a successful report or synthesis request can bill again, including server-cached results. Re-rendering a saved local response adds no MCP spend.
+- Preserve decimal balances and fractional 402 amounts. Sum using decimal-safe arithmetic; round only for display.
+- Input-only evaluation estimates assume successful requests. They cannot reconstruct partial request failures, actual deductions, or historical rates. Preserve historical ledgers under their original price assumptions.
+
+## Estimated cost per workflow
+
+These are **planning estimates**, not bills. Count each actual successful request
+once. Identity checks, coverage gates and asset routing remain required. Reuse only
+validated same-run responses with identical symbols, arguments and observation dates.
+Baseline statement reads do not set `latest=true`; comparisons add 0.05 per eligible
+statement and symbol. Additional successful retries, expansions and requested branches
+add their own costs. Country discovery, symbol resolution and job polling add zero.
+
+In mixed-asset rows, P denotes successful ETF profile probes, not attempted probes.
+Row-specific definitions override this notation. For an N-holding
+book, reserve up to 0.1N credits for classification; failed HTTP probes do not bill.
+Macro overview totals below show normal and conditional maximum prices separately.
+
+### Single stock and research workflows
+
+| Workflow | Credits | Baseline and conditional calls |
+|---|---|---|
+| `/parallax-score-explainer` | **0 / 0.25 / 5.15** | Methodology-only 0, or 0.05 with symbol identity; current-score explanation 0.25; change explanation 5.15. Explicitly requested report +10. |
+| `/parallax-peer-comparison` | **0.8 automatic / 0.9 explicit** | Three verified equities, with unsuccessful HTTP ETF probes. For L priced legs and E equity histories: automatic `0.2 + 0.1L + 0.1E + 0.1P`; explicit `0.2L + 0.1E + 0.1P`. |
+| `/parallax-should-i-buy` | **10.55–20.55** | Baseline 10.55 plus 5 per explicit tactical market, up to two. |
+| `/parallax-due-diligence` | **15.35 / 25.35** | Core financials, history, technicals, news and Palepu; confirmed full report +10. |
+| `/parallax-deep-dive` | **20.6–35.6** | Core 20.6 including assessment; up to three explicit tactical markets at 5 each. |
+| `/parallax-watchlist-monitor` | **41.2** | `0.1N + 10.05F`, for N=10 watched names and F=4 flagged names; no flags costs1. |
+
+### Portfolio and desk workflows
+
+| Workflow | Credits | Baseline and conditional calls |
+|---|---|---|
+| `/parallax-portfolio-checkup` | **7.5–17.5** | Ten holdings, identity/snapshot1.5, redundancy1, one-to-three tactical markets5 each. With no macro markets,2.5. Scoring/redundancy fallbacks add actual selected holding requests. |
+| `/parallax-morning-brief` | **22.55–32.55 normally** | Ten holdings, three top-name news jobs, one-to-three macro overviews. Each overview costs5 normally/up to50; mover news and scoring fallbacks add calls. |
+| `/parallax-explain-portfolio` | **28.05 + 0.1P** | Ten equity identities, scores, trends and prices; telemetry; two tactical markets; three news jobs. Reuse matching existing detractor snapshots. |
+| `/parallax-scenario-analysis` | **41.55 + 0.1P** | Ten equity holdings, two sector news jobs, one tactical market, two assessments and analysis. Requested additions add universe/candidate/financial reads. |
+| `/parallax-rebalance` | **23.5 + 0.1P** | Ten equity holdings, three tactical markets, snapshots, trends, redundancy and portfolio analysis. Proposed V2 scoring is local; V1 quick scoring and replacement/repair calls add costs. |
+| `/parallax-client-review` | **64.1 + 0.1P** | Ten equities, three tactical markets, eight drill-downs, five news jobs, one assessment and two analyses. Reuse verified matching snapshots. |
+
+### Navigation, translations and cost context
+
+The concierge adds no paid data calls of its own. Free health and symbol-resolution
+calls can run; price the chosen workflow separately. The four
+translation skills add no Parallax MCP credits when translating supplied reports.
+Model token charges, third-party services and hosting costs are separate.
+
+Plan prices, included allocations and dollar conversion rates are not verified by
+this tool contract. Use the operator's current plan before quoting dollars or monthly
+allowances. A per-workflow credit estimate is not evidence of a current subscription price.
+
+Examples at22 runs per month, before optional branches or view surcharges:
+
+- `/parallax-morning-brief` (~22.55 credits for ten holdings, three news jobs and one normal overview) uses496.1 credits monthly; overview reassembly increases it.
+- `/parallax-should-i-buy` (20.55 credits with two tactical markets), twenty checks, uses411 credits.

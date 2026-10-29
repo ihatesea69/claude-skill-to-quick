@@ -1,0 +1,22 @@
+{
+  "name": "parallax-should-i-buy",
+  "source": "parallax-should-i-buy.skill",
+  "frontmatter_keys": [
+    "name",
+    "description",
+    "inputs",
+    "tools",
+    "integration"
+  ],
+  "host_binding_inserted": true,
+  "newline": "CRLF",
+  "source_skill_md_sha256": "ac1db4530369cc1cff31ebd978f9c39b38412cad33a587edd2264eac95a45f46",
+  "source_body_sha256": "8942ed17221874eb89a2a99eed1f1616bd327a3f42d3184051a4d893d04e06c0",
+  "body_unchanged": true,
+  "leading_blank_lines_dropped": 2,
+  "file_count": 25,
+  "zip": "parallax-should-i-buy.zip",
+  "zip_bytes": 182643,
+  "problems": [],
+  "ok": true
+}

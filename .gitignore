@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+dist/
+.parallax-policy/
+# customer-specific working files never go into this public method repo
+customers/
+*.local.*

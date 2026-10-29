@@ -1,0 +1,21 @@
+# Quick frontmatter profile for parallax-portfolio-checkup.
+# Values are taken from the source SKILL.md ("Usage" and "Step 0") - nothing invented.
+inputs:
+  - name: holdings
+    required: true
+    description: 'JSON list of holdings, for example [{"symbol":"AAPL.O","weight":0.30},{"symbol":"MSFT.O","weight":0.25}].'
+  - name: audience
+    required: false
+    description: "audience=client_safe or audience=internal_analyst."
+tools:
+  - get_company_info
+  - get_peer_snapshot
+  - check_portfolio_redundancy
+  - macro_analyst
+  - list_macro_countries
+integration:
+  connector: Parallax
+  type: mcp
+  url: https://mcp.chicago.global/api/mcp
+  auth: oauth-user
+  requires: Active Parallax subscription (Chicago Global). Without it the skill runs its pre-flight and reports the connector as unavailable; it returns no data.

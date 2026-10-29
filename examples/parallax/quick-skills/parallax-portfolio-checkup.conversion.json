@@ -1,0 +1,22 @@
+{
+  "name": "parallax-portfolio-checkup",
+  "source": "parallax-portfolio-checkup.skill",
+  "frontmatter_keys": [
+    "name",
+    "description",
+    "inputs",
+    "tools",
+    "integration"
+  ],
+  "host_binding_inserted": true,
+  "newline": "CRLF",
+  "source_skill_md_sha256": "6a21129b63b0d435d11d7457b79286ea05836232a096469d78d7bd01ba1b9d0f",
+  "source_body_sha256": "a2f8c2e7b2782c738b434fa4ee9287c5666688f5694198e60cec426e7fdee60d",
+  "body_unchanged": true,
+  "leading_blank_lines_dropped": 2,
+  "file_count": 25,
+  "zip": "parallax-portfolio-checkup.zip",
+  "zip_bytes": 182020,
+  "problems": [],
+  "ok": true
+}
