@@ -15,11 +15,31 @@ without touching the workflow text.
 | Path | What it is |
 |---|---|
 | `converter/claude2quick.py` | Converter: Claude skill folder or `.skill`/`.zip` in, Quick folder + zip + JSON report out |
+| `INSTALL-WITH-QUICK.md` | Playbook the Quick agent follows when the person pastes this repo plus a Claude skill repo into chat |
 | `docs/CONVERSION-GUIDE.md` | The method: how each Claude packaging piece maps to Amazon Quick, and the checks to run |
 | `examples/parallax/` | Worked example: two Parallax equity-research workflows converted for Amazon Quick |
 | `examples/aws-agent-plugins/` | Worked example with no login: two awslabs/agent-plugins skills on the public AWS Knowledge MCP Server. Use it to test a conversion end to end |
 | `tools/recheck.py` | Re-run the package checks on folders that were already built |
 | `tests/` | Unit tests for the converter (`python -m unittest discover -s tests`) |
+
+## Install by pasting into Amazon Quick
+
+Paste this into an Amazon Quick chat. The first link is this repository (the general
+method), the second is the Claude skill repository to install (Parallax is the worked
+example):
+
+```text
+Follow INSTALL-WITH-QUICK.md in https://github.com/ihatesea69/claude-skill-to-quick
+to install skills from https://github.com/bencharoenwong/parallax-workflows
+into Amazon Quick. Tell me what you did, and ask me for anything missing,
+such as signing in to the connector.
+```
+
+`INSTALL-WITH-QUICK.md` is the playbook the agent follows. Adding a connector and
+signing in are done by the person in the Quick UI, so the agent hands those steps back
+with the exact values. Not verified yet: how much of this the Quick agent can do on
+its own (fetching the repo, importing a zip). The playbook falls back to telling the
+person what to click when it cannot.
 
 ## Quick start
 
